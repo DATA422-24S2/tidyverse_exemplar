@@ -1,0 +1,146 @@
+---
+title: "Assignment 1"
+author: "Taylor Winter (Cool student number only for cool people)"
+date: "`r Sys.Date()`"
+output:
+  
+  html_document: default
+  pdf_document: default
+header-includes:
+  - \usepackage{floatrow}
+  - \floatsetup[figure]{capposition=top}
+---
+
+```{r setup, include=FALSE}
+# Note above we have include=FALSE which supresses both code and output just for this chunk
+
+# Load your libraries here
+library(tidyverse)
+
+# This suppresses the code in your knitted file but not the output
+knitr::opts_chunk$set(echo = FALSE)
+
+```
+
+## Overview
+
+This is a very brief speed run of some core `tidyverse` functions to use in your first assignment. It does not address your assignment one research question but should contain handy tips.
+
+If you want to see some more detail than what we go into here. Then the most brief resource is the data wrangling cheat sheet:
+
+<https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf>
+
+If you want a more definitive guide on R, then I would advise Hadley Wickhams text book 'R for Data Science' which is free on his website:
+
+<https://r4ds.hadley.nz/>
+
+## Loading default datasets
+
+Default datasets in R can be loaded simply by calling them with their name. We can take a look at the `mtcars` dataset below.
+
+Some people had questions about the meaning of each variable. If you use `?` infront of the dataset name, RStudio will bring up the appropriate documentation. E.g., `?mtcars`.
+
+```{r cars}
+summary(mtcars)
+```
+
+## Selecting columns in your dataframe
+
+Using the `select()` function we can select columns based on their name, their column number, or some other filtering step (see the data wrangling cheat sheet for helper functions if interested).
+
+Recall the pipe function takes whatever we have on the left, and parses it to a function on the right. In this case `mtcars` is piped to the `select()` function.
+
+```{r select}
+mtcars %>%
+  # Select the column named 'mpg'
+  select(mpg) %>%
+  # To reduce clutter I am taking the heading five rows of data
+  head()
+```
+
+## Filter rows of data
+
+Next is the `filter()` function which you can use to filter your variables. We can use Boolean expressions or any other type of logical test. In the example below we wish to filter down to only vehicles with mpg greater than 30mpg.
+
+```{r filter}
+mtcars %>%
+  # Filter rows to mpg over 30 (note if true the row is retained)
+  filter(mpg > 30) %>%
+  head()
+```
+
+## Mutate
+
+When you need to create a new variable based on some existing variable or simply wish to transform an existing variable, you can use `mutate()`.
+
+```{r mutate}
+mtcars %>%
+  # This silly example creates a new variable that is mpg * 100
+  mutate(mpg_100 = mpg * 100) %>%
+  # Select the original and new variable to check them
+  select(mpg, mpg_100) %>%
+  head()
+```
+
+## Summarise variables or groups of variables
+
+The `summarise()` function allows us to operate over an entire variable. In the example below, I have taken both the mean and standard deviation of the `mpg` variable.
+
+```{r summarise}
+mtcars %>%
+  summarise(
+    # Calculate the mean for mpg and round to two decimal places
+    mpg_mean = round(mean(mpg), 2),
+    # Calculate the standard deviation and round to two decimal places
+    mpg_sd = round(sd(mpg), 2)
+    )
+```
+
+## Group by a discrete or categorical variable
+
+The `group_by()` variable is very powerful and allows us to group by one or more variables, then apply a function on each grouping. The grouping will remain applied to the data frame until we overwrite it with a new grouping or explicitly `ungroup()` the data.
+
+```{r group_by}
+mtcars %>%
+  # Group by the discrete variable, number of cylinders
+  group_by(cyl) %>%
+  # Calculate the mean of mpg for each number of cylinders
+  summarise(mpg_mean = round(mean(mpg), 2)) %>%
+  # If you don't ungroup the data when its no longer needed it can cause problems
+  ungroup()
+```
+
+## Visualise your data
+
+GGplot allows you to produce almost any graph you could imagine. The way it works is by forming a canvas where you lay out where you want each variable. You then start layering up each feature and each layer of styling.
+
+Some examples of what more complex customization looks like in practice can be seen in the Ngāi Tahu state of the nation report where we used GGplot for everything except the maps:
+
+<https://ngaitahu.iwi.nz/assets/Documents/State-of-Ngai-Tahu-Nation-2021-web.pdf>
+
+The `theme()` function is where you can really customize the heck out of your plots but it gets quite complicated. Note that the labels need to be readable and appropriately named.
+
+```{r plots, fig.cap="Increase in milage based on horsepower and cylinders."}
+
+mtcars %>%
+  # Change the cyl variable to a factor or GGplot treats it as continuous
+  mutate(cyl = as.factor(cyl)) %>%
+  # Set up the base canvas with colors varying by cyl (which implicitly groups the data)
+  ggplot(aes(x=hp, y=mpg, color=cyl)) +
+  # Add a point for each hp-mpg coordinate and color by cyl
+  geom_point() +
+  # Add a line of best fit using a linear model and disable standard errors
+  geom_smooth(method = "lm", se=FALSE) +
+  # Rename the labels and a
+  labs(
+    x="Horse power",
+    y="Miles per gallon"
+  ) +
+  # Use one of the default themes (you can type theme_ and press tab to see other options)
+  theme_classic() +
+  # Adjust the text size
+  theme(
+    text = element_text(size = 14)
+  )
+
+```
